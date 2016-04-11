@@ -953,14 +953,23 @@ subrepo:clean() {
     o "Remove all subrepo refs."
     local delete_pattern=
     if "$ALL_wanted"; then
-      delete_pattern="refs/heads/subrepo-push/\|refs/heads/subrepo/\|"\
-"refs/original/subrepo/\|refs/subrepo/"
+      delete_pattern=(
+        refs/heads/subrepo/
+        refs/heads/subrepo-push/
+        refs/original/subrepo/
+        refs/subrepo/
+      )
+      delete_pattern="^($(IFS='|'; echo "${delete_pattern[*]}"))"
     else
       delete_pattern="^refs/subrepo/$subdir/[^/]*$"
     fi
 
-    for ref in $(git show-ref | awk '{print $2}' | grep -v "refs/remotes/" |
-      grep "$delete_pattern"); do
+    for ref in $(
+      git show-ref |
+      cut -d' ' -f2 |
+      grep -v "^refs/remotes/" |
+      grep -E "$delete_pattern"
+    ); do
       RUN git update-ref -d "$ref"
     done
   fi
