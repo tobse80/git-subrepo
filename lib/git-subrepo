@@ -118,6 +118,9 @@ main() {
   local override_remote=        # Remote specified with -r
   local override_branch=        # Remote specified with -b
 
+  local edit_wanted=false       # Edit commit message using -e
+  local wanted_commit_message=  # Custom commit message using -m
+
   local FAIL=true               # Flag for RUN: fail on error
   local OUT=false               # Flag for RUN: put output in $output
   local TTY=false               # Flag for RUN: print output directly
@@ -779,6 +782,16 @@ subrepo:commit() {
   update-gitrepo-file
   RUN git add -f "$gitrepo"
 
+  local commit_message
+  if [[ -n "$wanted_commit_message" ]]; then
+    commit_message="$wanted_commit_message"
+  else
+    commit_message="$(get-commit-message)"
+  fi
+
+  local edit_flag=
+  $edit_wanted && edit_flag=--edit
+
   o "Commit to the '$original_head_branch' branch."
   if [[ $original_head_commit != none ]]; then
     RUN git commit -m "$(get-commit-message)"
@@ -1032,6 +1045,9 @@ get-command-options() {
       -f) force_wanted=true
           commit_msg_args+=("--force") ;;
       -F) fetch_wanted=true ;;
+      -m) wanted_commit_message="$1"
+          shift;;
+      -N) dry_run_wanted=true ;;
       -r) subrepo_remote="$1"
           override_remote="$1"
           commit_msg_args+=("--remote=$1")
@@ -1081,6 +1097,9 @@ get-command-options() {
   fi
   if [[ -n $override_remote ]]; then
     check_option remote
+  fi
+  if [[ -n $wanted_commit_message ]]; then
+    check_option message
   fi
   if $update_wanted; then
     check_option update
