@@ -967,6 +967,12 @@ subrepo:clean() {
     else
       RUN rm -fr .git/refs/subrepo/$subref/
     fi
+
+    o "Remove leftovers from 'git filter-branch'"
+    RUN git for-each-ref --format='"%(refname)"' refs/original/refs/heads/subrepo/
+    if [[ -n $output ]]; then
+      RUN git update-ref -d $(sed -e 's/^"//' -e 's/"$//' <<<"$output")
+    fi
   fi
 }
 
